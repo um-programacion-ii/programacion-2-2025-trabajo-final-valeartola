@@ -1,0 +1,64 @@
+# ===========================
+# BUILD SYSTEMS (Java/Maven/Gradle)
+# ===========================
+/backend/build/
+/backend/out/
+/backend/target/
+/backend/.gradle/
+
+/proxy/build/
+/proxy/out/
+/proxy/target/
+/proxy/.gradle/
+
+.gradle/
+out/
+build/
+*.class
+*.log
+logs/
+
+# ===========================
+# KOTLIN MULTIPLATFORM (Mobile)
+# ===========================
+/mobile/build/
+/mobile/.gradle/
+/mobile/.kotlin/
+/mobile/compose-cache/
+
+/mobile/android/build/
+/mobile/android/.idea/
+
+/mobile/ios/build/
+/mobile/ios/Pods/
+
+# ===========================
+# IDE FILES (JetBrains / VSCode)
+# ===========================
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# ===========================
+# NODE / PHP / VENDOR STUFF
+# ===========================
+node_modules/
+vendor/
+
+# ===========================
+# ENV / TOKENS / CREDENTIALS
+# ===========================
+.env
+.env*
+*secret*.yml
+*secret*.properties
+application-local.yml
+application-local.properties
+
+# ===========================
+# OS CACHE FILES
+# ===========================
+.DS_Store
+Thumbs.db
