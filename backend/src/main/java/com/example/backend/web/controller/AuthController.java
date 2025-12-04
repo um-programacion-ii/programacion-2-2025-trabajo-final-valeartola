@@ -1,6 +1,6 @@
 package com.example.backend.web.controller;
 
-import com.example.backend.security.jwt.JwtUtil;
+import com.example.backend.security.JwtUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
