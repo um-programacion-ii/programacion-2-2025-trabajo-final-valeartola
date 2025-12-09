@@ -17,6 +17,7 @@ build/
 *.class
 *.log
 logs/
+data/
 
 # ===========================
 # KOTLIN MULTIPLATFORM (Mobile)

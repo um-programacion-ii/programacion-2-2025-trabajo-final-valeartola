@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # ------------------------------------------------------------------
+  # 1. SERVICIO MYSQL
+  # Coincide con spring.datasource.url=.../tf_backend_db
+  # ------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_tp_final
+    ports:
+      - "3306:3306" # Puerto de la DB
+    environment:
+      # La variable se lee desde el archivo .env (siguiente paso)
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD_ROOT}
+      # Nombre de la base de datos
+      MYSQL_DATABASE: mysql_tp_final
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+
+  # ------------------------------------------------------------------
+  # 2. SERVICIO REDIS
+  # Coincide con spring.data.redis.password=tf_redis_pass
+  # ------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis_tp_final
+    ports:
+      - "6379:6379" # Puerto de Redis
+    # Comando para configurar la contraseña de Redis (tf_redis_pass)
+    command: redis-server --requirepass tf_redis_pass 
+    volumes:
+      - ./data/redis:/data

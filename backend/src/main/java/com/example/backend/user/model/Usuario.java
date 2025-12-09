@@ -28,12 +28,13 @@ public class Usuario {
     @Column(nullable = false, length = 60)
     private String password;
 
+    @Column(unique = true)
+    private String email;
+
     private String nombre;
     private String apellido;
     private String rol;
 
     @OneToMany(mappedBy = "usuario")
     private Set<Venta> ventas = new HashSet<>();
-
-    // ... Getters y Setters ...
 }
