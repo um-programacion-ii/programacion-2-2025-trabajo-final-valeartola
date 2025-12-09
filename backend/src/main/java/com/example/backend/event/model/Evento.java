@@ -42,5 +42,4 @@ public class Evento {
     @JoinColumn(name = "evento_tipo_id")
     private TipoEvento eventoTipo;
 
-    // ... Getters y Setters ...
 }
