@@ -1,5 +1,6 @@
 package com.example.backend.security;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -30,67 +31,52 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    /**
-     * Genera un token JWT a partir de los detalles del usuario.
-     */
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
-        // Opcional: añadir los roles del usuario como claims en el token
-        claims.put("roles", userDetails.getAuthorities());
-        return createToken(claims, userDetails.getUsername());
+        return createToken(claims, username);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        // Usa la sintaxis Jwts.builder() con setClaims() para la construcción
         return Jwts.builder()
-                .setClaims(claims) // Carga los claims personalizados
-                .setSubject(subject) // Establece el nombre de usuario (subject)
-                .setIssuedAt(new Date(System.currentTimeMillis())) // Fecha de emisión
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration)) // Fecha de expiración
-                .signWith(getSigningKey()) // Firma el token con la clave secreta
-                .compact(); // Finaliza y comprime el token
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSigningKey())
+                .compact();
     }
 
-    // --- Métodos de Extracción y Validación ---
+    // --- MODIFICADO: Validar SIN UserDetails ---
+    // Ya no comparamos con la base de datos, solo verificamos firma y fecha
+    public boolean validateToken(String token) {
+        return !isTokenExpired(token);
+    }
 
-    /**
-     * Extrae el nombre de usuario (subject) del token.
-     */
     public String extractUsername(String token) {
-        return extractClaim(token, io.jsonwebtoken.Claims::getSubject);
+        return extractClaim(token, Claims::getSubject);
     }
 
-    /**
-     * Valida si el token es legítimo (firma OK) y no ha expirado.
-     */
-    public boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
-    // --- Métodos de bajo nivel ---
-
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, io.jsonwebtoken.Claims::getExpiration).before(new Date());
-    }
-
-    private <T> T extractClaim(String token, Function<io.jsonwebtoken.Claims, T> claimsResolver) {
-        final io.jsonwebtoken.Claims claims = extractAllClaims(token);
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    private io.jsonwebtoken.Claims extractAllClaims(String token) {
-        // Uso de parserBuilder().setSigningKey().build() necesario para versiones modernas de JJWT
+    private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
-                .build() // Crea el parser
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
 
-    /**
-     * Decodifica la clave secreta (Base64) en un objeto Key utilizable para la firma.
-     */
+    private boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
