@@ -21,8 +21,9 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Aquí definimos las reglas generales
+                        .requestMatchers("/api/sessions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/eventos/**").permitAll()
+                        .requestMatchers("/api/auth/invitado").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -31,12 +32,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // --- LA SOLUCIÓN NUCLEAR ---
-    // Esto le dice a Spring Security: "Ojos cerrados con estas rutas".
-    // Ignora filtros, tokens y reglas para el login de invitado.
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
-                .requestMatchers("/api/auth/invitado");  // <--- ¡AQUÍ ESTÁ LA CLAVE!
+                .requestMatchers("/api/auth/invitado");
     }
 }
