@@ -28,6 +28,6 @@ services:
     ports:
       - "6379:6379" # Puerto de Redis
     # Comando para configurar la contraseña de Redis (tf_redis_pass)
-    command: redis-server --requirepass tf_redis_pass 
+    command: redis-server --requirepass TRABAJO_FINAL_PROG2
     volumes:
       - ./data/redis:/data
