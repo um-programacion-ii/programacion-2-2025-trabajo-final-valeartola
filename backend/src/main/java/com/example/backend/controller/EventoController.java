@@ -1,8 +1,9 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.EventoResumenDTO;
+import com.example.backend.model.EstadoEvento;
 import com.example.backend.model.Evento;
 import com.example.backend.repository.EventoRepository;
-import com.example.backend.service.EventoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,46 +14,44 @@ import java.util.List;
 public class EventoController {
 
     private final EventoRepository eventoRepository;
-    private final EventoService eventoService;
 
-    public EventoController(EventoRepository eventoRepository, EventoService eventoService) {
+    public EventoController(EventoRepository eventoRepository) {
         this.eventoRepository = eventoRepository;
-        this.eventoService = eventoService;
     }
 
-    // -------------------------------
-    // 🔵 EVENTOS LOCALES (tu código)
-    // -------------------------------
-
     @GetMapping
-    public ResponseEntity<List<Evento>> getAllEventos() {
-        List<Evento> eventos = eventoRepository.findAll();
+    public List<Evento> obtenerEventosActivos() {
+        return eventoRepository.findByEstado(EstadoEvento.ACTIVO);
+    }
 
-        if (eventos.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(eventos);
+    @GetMapping("/resumidos")
+    public List<EventoResumenDTO> obtenerEventosResumidos() {
+        return eventoRepository.findByEstado(EstadoEvento.ACTIVO)
+                .stream()
+                .map(EventoResumenDTO::fromEntity)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Evento> getEventoById(@PathVariable Long id) {
-        return eventoRepository.findById(id)
+    public Evento obtenerEventoPorId(@PathVariable Long id) {
+        Evento evento = eventoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+        if (evento.getEstado() == EstadoEvento.BAJA)
+            throw new RuntimeException("Evento dado de baja");
+        return evento;
+    }
+
+    @GetMapping("/catedra/{idCatedra}")
+    public ResponseEntity<?> obtenerPorIdCatedra(@PathVariable Long idCatedra) {
+        return eventoRepository.findByIdCatedra(idCatedra)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-
-    // ----------------------------------------
-    // 🟦 EVENTOS DESDE LA CÁTEDRA (nuevo)
-    // ----------------------------------------
-
-    @GetMapping("/catedra")
-    public ResponseEntity<?> getEventosDesdeCatedra() {
-        return ResponseEntity.ok(eventoService.obtenerEventosDesdeCatedra());
-    }
-
-    @GetMapping("/{id}/catedra")
-    public ResponseEntity<?> getEventoDesdeCatedra(@PathVariable Long id) {
-        return ResponseEntity.ok(eventoService.obtenerEventoDesdeCatedra(id));
+    @GetMapping("/{id}/asientos")
+    public String obtenerMapaAsientos(@PathVariable Long id) {
+        // Este endpoint forma parte del ISSUE de controladores
+        // La lógica real se hace en el ISSUE de selección/bloqueo
+        return "Mapa de asientos (implementación pendiente)";
     }
 }

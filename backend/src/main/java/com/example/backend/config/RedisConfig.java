@@ -16,10 +16,8 @@ public class RedisConfig {
 
         template.setConnectionFactory(connectionFactory);
 
-        // Clave como texto
         template.setKeySerializer(new StringRedisSerializer());
 
-        // Valor serializado como JSON (mucho mejor para tus sesiones)
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 
         return template;

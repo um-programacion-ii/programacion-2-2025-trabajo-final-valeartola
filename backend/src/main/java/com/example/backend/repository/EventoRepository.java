@@ -1,12 +1,17 @@
 package com.example.backend.repository;
 
+import com.example.backend.model.EstadoEvento;
 import com.example.backend.model.Evento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
-    // Útil para la sincronización y búsqueda rápida por el ID de la Cátedra
-    Evento findByIdCatedra(Long idCatedra);
+    List<Evento> findByEstado(EstadoEvento estado);
+
+    Optional<Evento> findByIdCatedra(Long idCatedra);
 }
