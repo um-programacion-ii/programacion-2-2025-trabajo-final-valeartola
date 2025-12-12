@@ -19,12 +19,12 @@ public class Evento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String titulo;
 
-    // ID del Evento en el servidor de la Cátedra (Para sincronización)
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private Long idCatedra;
 
-    private String titulo;
+    private String resumen;
 
     @Lob
     private String descripcion;
@@ -38,8 +38,14 @@ public class Evento {
     private Integer filaAsientos;
     private Integer columnAsientos;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EstadoEvento estado = EstadoEvento.ACTIVO;
+
     @ManyToOne
     @JoinColumn(name = "evento_tipo_id")
     private TipoEvento eventoTipo;
+
+
 
 }
