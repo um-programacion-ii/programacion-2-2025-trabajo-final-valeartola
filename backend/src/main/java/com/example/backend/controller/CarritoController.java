@@ -20,7 +20,7 @@ public class CarritoController {
     @PostMapping("/bloquear")
     public ResponseEntity<?> bloquearAsiento(
             @RequestBody BloqueoRequestDTO request,
-            @RequestHeader("X-Session-ID") String sessionId // El Front manda el ID de sesión
+            @RequestHeader("X-Session-ID") String sessionId
     ) {
         boolean exito = redisService.intentarBloquear(
                 request.eventoId(),

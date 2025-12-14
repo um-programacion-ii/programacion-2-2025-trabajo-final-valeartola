@@ -26,7 +26,7 @@ public class SessionService {
     public UserSession updateSession(String sessionId, UserSession newData) {
         String key = PREFIX + sessionId;
         redisTemplate.opsForValue().set(key, newData);
-        redisTemplate.expire(key, Duration.ofMinutes(30)); // refrescamos expiración
+        redisTemplate.expire(key, Duration.ofMinutes(30));
         return newData;
     }
 

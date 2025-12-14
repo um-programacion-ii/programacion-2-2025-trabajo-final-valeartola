@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record EventoExternoDTO(
         Long id,
         @JsonProperty("titulo") String titulo,
-        @JsonProperty("descripcion") String descripcion, // A veces la cátedra usa "resumen"
+        @JsonProperty("descripcion") String descripcion,
         @JsonProperty("fecha") String fecha,
         @JsonProperty("precio") Double precio,
-        @JsonProperty("estado") String estado // "HABILITADO", "FINALIZADO"
+        @JsonProperty("estado") String estado
 ) {}

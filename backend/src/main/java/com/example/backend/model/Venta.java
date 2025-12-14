@@ -20,7 +20,10 @@ public class Venta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "fecha_venta")
     private LocalDateTime fechaCompra;
+
+    @Column(name = "monto_total")
     private Double montoTotal;
 
 

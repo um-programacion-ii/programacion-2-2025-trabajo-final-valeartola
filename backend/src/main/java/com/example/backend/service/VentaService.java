@@ -1,33 +1,40 @@
 package com.example.backend.service;
 
 import com.example.backend.client.CatedraClient;
+import com.example.backend.model.Evento;
 import com.example.backend.model.Venta;
+import com.example.backend.repository.EventoRepository;
 import com.example.backend.repository.VentaRepository;
 import com.example.backend.dto.CarritoDTO;
 import com.example.backend.dto.SolicitudCompraDTO;
 import com.example.backend.dto.TicketItemDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class VentaService {
 
+    private final RedisService redisService; // Usamos RedisService, no el Template directo
     private final VentaRepository ventaRepository;
-    private final RedisService redisService;
+    private final EventoRepository eventoRepository;
     private final CatedraClient catedraClient;
 
     @Transactional
     public Object procesarCompra(String sessionId) {
-        // 1. Recuperar el carrito de Redis (La mochila)
+        // 1. Recuperar el carrito de Redis
         CarritoDTO carrito = redisService.obtenerCarrito(sessionId);
-        if (carrito.getTickets() == null || carrito.getTickets().isEmpty()) {
-            throw new RuntimeException("El carrito está vacío, no se puede comprar.");
+
+        if (carrito == null || carrito.getTickets() == null || carrito.getTickets().isEmpty()) {
+            throw new RuntimeException("El carrito está vacío o expiró.");
         }
 
-        // 2. SEGURIDAD: Verificar que los bloqueos sigan siendo de este usuario
-        // Si pasaron más de 5 mins, 'verificarBloqueo' dará false.
+        // 2. VERIFICACIÓN CORRECTA: Revisamos ticket por ticket
         for (TicketItemDTO ticket : carrito.getTickets()) {
             boolean esMio = redisService.verificarBloqueo(
                     carrito.getEventoId(),
@@ -35,28 +42,37 @@ public class VentaService {
                     ticket.columna(),
                     sessionId
             );
+
             if (!esMio) {
-                throw new RuntimeException("El asiento Fila " + ticket.fila() + " - Col " + ticket.columna() + " expiró o ya no te pertenece.");
+                throw new RuntimeException("El tiempo de reserva expiró para el asiento Fila " + ticket.fila() + " Col " + ticket.columna());
             }
         }
 
-        // 3. ADAPTADOR: Preparamos el paquete para la API externa
-        SolicitudCompraDTO solicitudExterna = new SolicitudCompraDTO(
-                carrito.getEventoId(), // OJO: Asegúrate que sea el ID de Cátedra, no el tuyo local
-                carrito.getTickets(),
+        // 3. Buscar el Evento REAL en la base de datos
+        Evento evento = eventoRepository.findById(carrito.getEventoId())
+                .orElseThrow(() -> new RuntimeException("El evento no existe en la base de datos"));
+
+        // 4. Calcular total
+        double total = carrito.getTickets().size() * evento.getPrecioEntrada();
+
+        // 5. Armar objeto para la Cátedra (Mock activado)
+        Map<String, Object> solicitudCatedra = Map.of(
+                "eventoId", carrito.getEventoId(),
+                "tickets", carrito.getTickets()
         );
 
-        // 4. EXTERNO: Enviamos la compra al Proxy (CatedraClient)
-        // Si el profesor responde error (ej: 400 o 500), esto lanza excepción y corta el flujo.
-        Object respuestaCatedra = catedraClient.enviarCompra(solicitudExterna);
+        // 6. Llamar al Mock
+        Object respuestaCatedra = catedraClient.enviarCompra(solicitudCatedra);
 
-        // 5. LOCAL: Si llegamos acá, el profe dijo OK. Guardamos en NUESTRA base de datos.
-        Venta ventaLocal = new Venta();
-        // ventaLocal.setTotal( ... ); // Calcular total
-        // ventaLocal.setFecha(Instant.now());
-        ventaRepository.save(ventaLocal);
+        // 7. Guardar en MySQL
+        Venta venta = new Venta();
+        venta.setEvento(evento);
+        venta.setFechaCompra(LocalDateTime.now());
+        venta.setMontoTotal(total);
 
-        // 6. LIMPIEZA: Borramos el carrito y liberamos memoria
+        ventaRepository.save(venta);
+
+        // 8. Limpiar Redis
         redisService.limpiarCarrito(sessionId);
 
         return respuestaCatedra;

@@ -44,8 +44,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
 
-        // *** FIX IMPORTANTE ***
-        // Hacer que los controladores puedan leerlo:
         if (sessionId != null) {
             request.setAttribute("sessionId", sessionId);
         }

@@ -17,18 +17,20 @@ public class VentaController {
     private final VentaRepository ventaRepository;
     private final VentaService ventaService;
 
-    // Endpoint para confirmar la compra (Llama al Service)
     @PostMapping("/confirmar")
     public ResponseEntity<?> confirmarCompra(@RequestHeader("X-Session-ID") String sessionId) {
         try {
+            // Llamamos al servicio que valida Redis, Cátedra y guarda en MySQL
             Object ticket = ventaService.procesarCompra(sessionId);
             return ResponseEntity.ok(ticket);
         } catch (RuntimeException e) {
+            // Manejo de errores de negocio (ej: asiento expirado)
             return ResponseEntity.status(409).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error interno al procesar la compra");
         }
     }
 
-    // Endpoints de lectura (Ya los tenías, se mantienen igual)
     @GetMapping("/{id}")
     public Venta obtenerVentaPorId(@PathVariable Long id) {
         return ventaRepository.findById(id)
