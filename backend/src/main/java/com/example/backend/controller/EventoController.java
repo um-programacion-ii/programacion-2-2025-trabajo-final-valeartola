@@ -28,7 +28,14 @@ public class EventoController {
     public List<EventoResumenDTO> obtenerEventosResumidos() {
         return eventoRepository.findByEstado(EstadoEvento.ACTIVO)
                 .stream()
-                .map(EventoResumenDTO::fromEntity)
+                // CORRECCIÓN: Hacemos el mapeo manualmente aquí con una lambda
+                .map(evento -> new EventoResumenDTO(
+                        evento.getId(),
+                        evento.getTitulo(),
+                        evento.getResumen(),
+                        evento.getFecha().toString(), // Convertimos Instant a String
+                        evento.getPrecioEntrada()     // Mapeamos precioEntrada a precio
+                ))
                 .toList();
     }
 
@@ -36,8 +43,11 @@ public class EventoController {
     public Evento obtenerEventoPorId(@PathVariable Long id) {
         Evento evento = eventoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
-        if (evento.getEstado() == EstadoEvento.BAJA)
+
+        // Validación extra de estado
+        if (evento.getEstado() == EstadoEvento.BAJA) {
             throw new RuntimeException("Evento dado de baja");
+        }
         return evento;
     }
 
@@ -50,8 +60,6 @@ public class EventoController {
 
     @GetMapping("/{id}/asientos")
     public String obtenerMapaAsientos(@PathVariable Long id) {
-        // Este endpoint forma parte del ISSUE de controladores
-        // La lógica real se hace en el ISSUE de selección/bloqueo
-        return "Mapa de asientos (implementación pendiente)";
+        return "Mapa de asientos (implementación pendiente - ver EventoService)";
     }
 }

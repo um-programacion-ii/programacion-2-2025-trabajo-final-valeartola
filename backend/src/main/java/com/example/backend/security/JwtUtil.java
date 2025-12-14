@@ -5,7 +5,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -14,26 +13,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Clase de utilidad para gestionar los JSON Web Tokens (JWT):
- * crear, validar y extraer información de ellos.
- *
- * Utiliza la sintaxis moderna de la librería JJWT (0.12.x) que requiere
- * parserBuilder().build() para la lectura.
- */
 @Component
 public class JwtUtil {
 
-    // Se inyectan las propiedades definidas en application.yml (o application.properties)
     @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(String username) {
+    // --- GENERAR TOKEN PARA INVITADO ---
+    public String generateTokenWithSession(String sessionId) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, username);
+        claims.put("rol", "GUEST");
+
+        return createToken(claims, sessionId);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
@@ -46,21 +40,28 @@ public class JwtUtil {
                 .compact();
     }
 
-    // --- MODIFICADO: Validar SIN UserDetails ---
-    // Ya no comparamos con la base de datos, solo verificamos firma y fecha
     public boolean validateToken(String token) {
-        return !isTokenExpired(token);
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    public String extractUsername(String token) {
+    public String extractUsername(String token) { // Para Spring Security
         return extractClaim(token, Claims::getSubject);
     }
 
-    private Date extractExpiration(String token) {
+    public String extractSessionId(String token) {
+        // En tu caso, el sessionId es el mismo Subject
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
@@ -78,7 +79,12 @@ public class JwtUtil {
     }
 
     private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secret);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException e) {
+
+            return Keys.hmacShaKeyFor(secret.getBytes());
+        }
     }
 }
