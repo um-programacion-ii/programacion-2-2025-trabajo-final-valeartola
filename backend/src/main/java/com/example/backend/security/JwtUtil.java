@@ -5,7 +5,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -14,53 +13,58 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Clase de utilidad para gestionar los JSON Web Tokens (JWT):
- * crear, validar y extraer información de ellos.
- *
- * Utiliza la sintaxis moderna de la librería JJWT (0.12.x) que requiere
- * parserBuilder().build() para la lectura.
- */
 @Component
 public class JwtUtil {
 
-    // Se inyectan las propiedades definidas en application.yml (o application.properties)
     @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(String username) {
+    // --- GENERAR TOKEN PARA INVITADO ---
+    // En el modelo Tótem, el username ES el sessionId
+    public String generateTokenWithSession(String sessionId) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, username);
+        claims.put("rol", "GUEST"); // Agregamos rol por si acaso
+
+        return createToken(claims, sessionId);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(subject)
+                .setSubject(subject) // Aquí va el sessionId (guest-xxx)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    // --- MODIFICADO: Validar SIN UserDetails ---
-    // Ya no comparamos con la base de datos, solo verificamos firma y fecha
+    // --- VALIDACIONES ---
     public boolean validateToken(String token) {
-        return !isTokenExpired(token);
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    public String extractUsername(String token) {
+    // --- EXTRAER DATOS ---
+    public String extractUsername(String token) { // Para Spring Security
         return extractClaim(token, Claims::getSubject);
     }
 
-    private Date extractExpiration(String token) {
+    public String extractSessionId(String token) {
+        // En tu caso, el sessionId es el mismo Subject
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
@@ -77,8 +81,17 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
+    // --- CLAVE SECRETA SEGURA ---
     private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        // 1. Intentamos decodificar como Base64 (lo ideal)
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secret);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (IllegalArgumentException e) {
+            // 2. Si falla (porque pusiste una contraseña simple en texto),
+            // usamos los bytes directos para que no explote.
+            // OJO: Esto es menos seguro, pero evita que te trabes ahora.
+            return Keys.hmacShaKeyFor(secret.getBytes());
+        }
     }
 }

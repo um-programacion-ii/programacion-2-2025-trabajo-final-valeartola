@@ -13,11 +13,12 @@ public class RedisConfig {
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-
         template.setConnectionFactory(connectionFactory);
 
+        // Las claves son Strings simples
         template.setKeySerializer(new StringRedisSerializer());
 
+        // Los valores se guardan como JSON (para poder leerlos visualmente si entras a Redis)
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 
         return template;
