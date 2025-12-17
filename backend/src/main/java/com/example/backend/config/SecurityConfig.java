@@ -15,23 +15,18 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Desactivamos CSRF
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 2. Configuramos los permisos de las rutas
                 .authorizeHttpRequests(auth -> auth
-                        // Permitimos entrar a /api/invitado para generar la sesión
+
+                        .requestMatchers("/api/internal/**").permitAll()
                         .requestMatchers("/api/invitado").permitAll()
-
-                        // Permitimos ver el catálogo de eventos (público)
                         .requestMatchers("/api/eventos/**").permitAll()
-
-                        // Permitimos los endpoints del carrito y ventas
                         .requestMatchers("/api/carrito/**").permitAll()
                         .requestMatchers("/api/ventas/**").permitAll()
 
-                        // Cualquier otra cosa requiere autenticación (por seguridad general)
                         .anyRequest().authenticated()
+
                 );
 
         return http.build();

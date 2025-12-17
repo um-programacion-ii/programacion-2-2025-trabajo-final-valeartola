@@ -21,19 +21,20 @@ public class CatedraClient {
     @Value("${catedra.url}")
     private String baseUrl;
 
-    @Value("${catedra.token}")
+    @Value("${catedra.api.token}")
     private String token;
 
     public List<EventoResumenDTO> getEventosResumidos() {
         try {
             return webClientBuilder.build()
                     .get()
-                    .uri(baseUrl + "/api/endpoints/v1/eventos-resumidos")
+                    .uri(baseUrl + "/api/eventos")
                     .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<List<EventoResumenDTO>>() {})
                     .block();
         } catch (Exception e) {
+            System.out.println("Error en CatedraClient: " + e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -48,33 +49,13 @@ public class CatedraClient {
                     .bodyToMono(new ParameterizedTypeReference<List<AsientoOcupadoExternoDTO>>() {})
                     .block();
         } catch (Exception e) {
+            System.out.println("Error buscando asientos: " + e.getMessage());
             return Collections.emptyList();
         }
     }
 
-    // --- AQUÍ ESTÁ LA MAGIA PARA ARREGLAR TU PROBLEMA ---
     public Object enviarCompra(Object solicitud) {
-
-
-        System.out.println("⚠️ MODO MOCK ACTIVADO: Simulando respuesta exitosa de Cátedra...");
-            return Map.of("mensaje", "Compra exitosa (SIMULADA)", "idTicket", 99999);
-
-
-//        return webClientBuilder.build()
-//                .post()
-//                .uri(baseUrl + "/api/endpoints/v1/ventas") // <--- CONFIRMA ESTA URL EN TU APUNTE
-//                .header("Authorization", "Bearer " + token)
-//                .bodyValue(solicitud)
-//                .retrieve()
-//                // Si la Catedra devuelve 404 o 400, capturamos el error para que sea legible
-//                .onStatus(HttpStatusCode::is4xxClientError, response ->
-//                        response.bodyToMono(String.class)
-//                                .flatMap(errorBody -> Mono.error(new RuntimeException("La Cátedra rechazó la compra: " + errorBody)))
-//                )
-//                .onStatus(HttpStatusCode::is5xxServerError, response ->
-//                        Mono.error(new RuntimeException("La Cátedra está caída, intente más tarde."))
-//                )
-//                .bodyToMono(Object.class)
-//                .block();
+        System.out.println("MODO MOCK ACTIVADO: Simulando respuesta exitosa de Cátedra...");
+        return Map.of("mensaje", "Compra exitosa (SIMULADA)", "idTicket", 99999);
     }
 }

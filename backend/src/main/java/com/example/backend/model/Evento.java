@@ -1,42 +1,45 @@
 package com.example.backend.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @Entity
+@Data
 @Table(name = "evento")
 public class Evento {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private String titulo;
 
-    @Column(nullable = false, unique = true)
-    private Long idCatedra;
-
+    @Column(length = 500)
     private String resumen;
 
-    @Lob
+    @Column(length = 1000)
     private String descripcion;
 
     @Column(nullable = false)
-    private Instant fecha;
+    private LocalDateTime fechaHora;
 
     private String direccion;
-    private Double precioEntrada;
+    private Double precio;
 
-    private Integer filaAsientos;
-    private Integer columnAsientos;
+    private Integer filas;
+    private Integer columnas;
+
+    @Column(name = "imagen_url", length = 2048)
+    private String imagenUrl;
+
+    private LocalDateTime ultimaActualizacion;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

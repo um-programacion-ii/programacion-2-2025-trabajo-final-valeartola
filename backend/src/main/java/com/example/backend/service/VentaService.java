@@ -53,7 +53,7 @@ public class VentaService {
                 .orElseThrow(() -> new RuntimeException("El evento no existe en la base de datos"));
 
         // 4. Calcular total
-        double total = carrito.getTickets().size() * evento.getPrecioEntrada();
+        double total = carrito.getTickets().size() * evento.getPrecio();
 
         // 5. Armar objeto para la Cátedra (Mock activado)
         Map<String, Object> solicitudCatedra = Map.of(

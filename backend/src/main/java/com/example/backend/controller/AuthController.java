@@ -19,10 +19,8 @@ public class AuthController {
 
     @PostMapping("/invitado")
     public ResponseEntity<?> iniciarSesionInvitado() {
-        // 1. Generamos un ID único
         String guestId = "guest-" + UUID.randomUUID().toString();
 
-        // 2. CORRECCIÓN AQUÍ: El metodo se llama 'generateTokenWithSession' en tu JwtUtil
         String jwt = jwtUtil.generateTokenWithSession(guestId);
 
         return ResponseEntity.ok(new AuthResponse(jwt, guestId));
