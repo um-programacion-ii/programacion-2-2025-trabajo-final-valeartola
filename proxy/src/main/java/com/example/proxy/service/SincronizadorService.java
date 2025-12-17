@@ -52,7 +52,7 @@ public class SincronizadorService {
             log.info("Reenviado al Backend con éxito.");
 
         } catch (Exception e) {
-            log.error("🔥 Error al intentar sincronizar con el Backend: {}", e.getMessage());
+            log.error("Error al intentar sincronizar con el Backend: {}", e.getMessage());
         }
     }
 }

@@ -13,5 +13,4 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     List<Evento> findByEstado(EstadoEvento estado);
 
-    Optional<Evento> findByIdCatedra(Long idCatedra);
 }

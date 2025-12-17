@@ -20,11 +20,9 @@ public class VentaController {
     @PostMapping("/confirmar")
     public ResponseEntity<?> confirmarCompra(@RequestHeader("X-Session-ID") String sessionId) {
         try {
-            // Llamamos al servicio que valida Redis, Cátedra y guarda en MySQL
             Object ticket = ventaService.procesarCompra(sessionId);
             return ResponseEntity.ok(ticket);
         } catch (RuntimeException e) {
-            // Manejo de errores de negocio (ej: asiento expirado)
             return ResponseEntity.status(409).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error interno al procesar la compra");
