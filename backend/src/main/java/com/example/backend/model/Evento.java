@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -48,6 +50,14 @@ public class Evento {
     @ManyToOne
     @JoinColumn(name = "evento_tipo_id")
     private TipoEvento eventoTipo;
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "evento_integrante",
+            joinColumns = @JoinColumn(name = "evento_id"),
+            inverseJoinColumns = @JoinColumn(name = "integrante_id")
+    )
+    private Set<Integrante> integrantes = new HashSet<>();
 
 
 

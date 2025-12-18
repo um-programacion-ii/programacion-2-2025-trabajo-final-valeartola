@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TipoEventoRepository extends JpaRepository<TipoEvento, Long> {
 
-    TipoEvento findByNombre(String nombre);
+    java.util.Optional<TipoEvento> findByNombre(String nombre);
 }

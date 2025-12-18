@@ -1,12 +1,12 @@
 package com.example.backend.service;
 
-import com.example.backend.client.CatedraClient;
-import com.example.backend.dto.AsientoOcupadoExternoDTO;
-import com.example.backend.dto.EstadoAsientoDTO;
 import com.example.backend.dto.EventoExternoDTO;
-import com.example.backend.dto.EventoResumenDTO;
 import com.example.backend.model.Evento;
+import com.example.backend.model.Integrante;
+import com.example.backend.model.TipoEvento;
 import com.example.backend.repository.EventoRepository;
+import com.example.backend.repository.IntegranteRepository;
+import com.example.backend.repository.TipoEventoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +31,9 @@ import java.util.stream.Collectors;
 public class EventoService {
 
     private final EventoRepository eventoRepository;
+    private final TipoEventoRepository tipoEventoRepository;
     private final RestTemplate restTemplate;
+    private final IntegranteRepository integranteRepository;
 
     @Value("${catedra.url}")
     private String catedraUrl;
@@ -39,18 +41,12 @@ public class EventoService {
     @Value("${catedra.api.token}")
     private String catedraToken;
 
-    public List<Evento> getAllEvents() {
-
-        syncEvents();
-        return eventoRepository.findAll();
-    }
-
     @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void syncEvents() {
         try {
-            String url = catedraUrl + "/api/eventos";
-            log.info("Conectando a Cátedra: {}", url);
+            String url = catedraUrl + "/api/endpoints/v1/eventos";
+            log.info("Sincronizando con: {}", url);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + catedraToken);
@@ -60,86 +56,38 @@ public class EventoService {
                     url, HttpMethod.GET, entity, EventoExternoDTO[].class);
 
             if (response.getBody() != null) {
-                List<EventoExternoDTO> eventosExternos = Arrays.asList(response.getBody());
-                procesarListaInteligente(eventosExternos);
+                procesarListaInteligente(Arrays.asList(response.getBody()));
             }
         } catch (Exception e) {
-            log.error("Falló la sincronización: {}", e.getMessage());
+            log.error("Error en la sincronización: {}", e.getMessage());
+            // No relanzamos la excepción para evitar que la app no arranque
         }
     }
 
     private void procesarListaInteligente(List<EventoExternoDTO> externos) {
-        List<Evento> locales = eventoRepository.findAll();
-
-        Map<Long, Evento> mapaLocales = locales.stream()
+        // 1. Cargamos lo que tenemos en la DB
+        Map<Long, Evento> mapaLocales = eventoRepository.findAll().stream()
                 .collect(Collectors.toMap(Evento::getId, Function.identity()));
 
-        Set<Long> idsExternos = new HashSet<>();
-
-        int actualizados = 0;
-        int creados = 0;
-        int borrados = 0;
-        int sinCambios = 0;
-
         for (EventoExternoDTO dto : externos) {
-            idsExternos.add(dto.id());
-
-            if (mapaLocales.containsKey(dto.id())) {
-                // YA EXISTE: Verificar si cambió algo
-                Evento eventoLocal = mapaLocales.get(dto.id());
-                if (huboCambios(eventoLocal, dto)) {
-                    actualizarDatos(eventoLocal, dto);
-                    eventoRepository.save(eventoLocal);
-                    actualizados++;
-                    log.debug("Evento actualizado: {}", dto.titulo());
-                } else {
-                    sinCambios++;
-                }
-            } else {
-                // NO EXISTE: Crear nuevo
-                Evento nuevo = new Evento();
-                nuevo.setId(dto.id()); // Asignamos el ID manual que viene de afuera
-                actualizarDatos(nuevo, dto);
-                eventoRepository.save(nuevo);
-                creados++;
-                log.debug("Evento nuevo creado: {}", dto.titulo());
+            Evento evento = mapaLocales.getOrDefault(dto.id(), new Evento());
+            if (evento.getId() == null) {
+                evento.setId(dto.id());
             }
+
+            actualizarDatos(evento, dto);
+            eventoRepository.save(evento);
         }
-
-        // 3. Detectar eliminados (Están en Local pero NO en Externos)
-        List<Evento> aBorrar = locales.stream()
-                .filter(e -> !idsExternos.contains(e.getId()))
-                .collect(Collectors.toList());
-
-        if (!aBorrar.isEmpty()) {
-            eventoRepository.deleteAll(aBorrar);
-            borrados = aBorrar.size();
-            log.info("Se eliminaron {} eventos que ya no existen en la cátedra.", borrados);
-        }
-
-        log.info("Resumen Sync: {} Nuevos, {} Actualizados, {} Borrados, {} Intactos.",
-                creados, actualizados, borrados, sinCambios);
+        log.info("Sincronización de eventos completada.");
     }
 
-    // Compara campo por campo para ver si vale la pena actualizar
-    private boolean huboCambios(Evento local, EventoExternoDTO externo) {
-        // Comparamos los campos clave. Si alguno es distinto, retorna true.
-        return !Objects.equals(local.getTitulo(), externo.titulo()) ||
-                !Objects.equals(local.getDescripcion(), externo.descripcion()) ||
-                !Objects.equals(local.getPrecio(), externo.precio()) ||
-                !Objects.equals(local.getImagenUrl(), externo.imagen()) ||
-                !Objects.equals(local.getFilas(), externo.filas()) ||
-                !Objects.equals(local.getColumnas(), externo.columnas()) ||
-                // Compara fechas (convirtiendo DTO Timestamp a LocalDateTime si es necesario)
-                (externo.fecha() != null && !local.getFechaHora().isEqual(externo.fecha().toLocalDateTime()));
-    }
-
-    // Copia los datos del DTO a la Entidad
     private void actualizarDatos(Evento evento, EventoExternoDTO dto) {
         evento.setTitulo(dto.titulo());
+        evento.setResumen(dto.resumen());
         evento.setDescripcion(dto.descripcion());
         evento.setImagenUrl(dto.imagen());
         evento.setPrecio(dto.precio());
+        evento.setDireccion(dto.direccion());
         evento.setFilas(dto.filas());
         evento.setColumnas(dto.columnas());
 
@@ -147,7 +95,46 @@ public class EventoService {
             evento.setFechaHora(dto.fecha().toLocalDateTime());
         }
 
-        // Solo actualizamos la fecha de "ultima modificación" cuando realmente tocamos los datos
+        // Manejo del Tipo de Evento
+        if (dto.eventoTipo() != null) {
+            TipoEvento tipo = tipoEventoRepository.findByNombre(dto.eventoTipo().nombre())
+                    .orElseGet(() -> {
+                        TipoEvento nt = new TipoEvento();
+                        nt.setNombre(dto.eventoTipo().nombre());
+                        nt.setDescripcion(dto.eventoTipo().descripcion());
+                        return tipoEventoRepository.save(nt);
+                    });
+            evento.setEventoTipo(tipo);
+        }
+
+        // --- LÓGICA DE INTEGRANTES SEGURA ---
+        if (dto.integrantes() != null) {
+            Set<Integrante> integrantesParaAsignar = new HashSet<>();
+
+            for (EventoExternoDTO.IntegranteDto iDto : dto.integrantes()) {
+                // Buscamos por identificación (DNI/Legajo) que es lo más seguro
+                Integrante integrante = integranteRepository.findByIdentificacion(iDto.identificacion())
+                        .orElseGet(() -> {
+                            // Si no existe, creamos uno NUEVO sin setearle ID manualmente
+                            Integrante nuevo = new Integrante();
+                            nuevo.setIdentificacion(iDto.identificacion());
+                            return nuevo;
+                        });
+
+                // Actualizamos los datos (por si cambiaron en la API)
+                integrante.setNombre(iDto.nombre());
+                integrante.setApellido(iDto.apellido());
+
+                // Guardamos el integrante individualmente para asegurarnos que tenga ID antes de ir a la tabla intermedia
+                integrante = integranteRepository.save(integrante);
+                integrantesParaAsignar.add(integrante);
+            }
+
+            // Actualizamos la relación ManyToMany
+            evento.getIntegrantes().clear();
+            evento.getIntegrantes().addAll(integrantesParaAsignar);
+        }
+
         evento.setUltimaActualizacion(LocalDateTime.now());
     }
 }

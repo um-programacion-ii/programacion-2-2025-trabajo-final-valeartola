@@ -21,12 +21,18 @@ public record EventoExternoDTO(
         @JsonProperty("filaAsientos") Integer filas,
         @JsonProperty("columnaAsientos") Integer columnas,
 
-        @JsonProperty("tipo") EventoTipoDto eventoTipo,
+        @JsonProperty("eventoTipo") EventoTipoDto eventoTipo,
         @JsonProperty("integrantes") List<IntegranteDto> integrantes
 ) {
+    public record EventoTipoDto(
+            @JsonProperty("nombre") String nombre,       // Asegúrate que en el JSON diga "nombre"
+            @JsonProperty("descripcion") String descripcion // Asegúrate que en el JSON diga "descripcion"
+    ) {}
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record EventoTipoDto(String nombre, String descripcion) {}
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record IntegranteDto(String nombre, String apellido) {}
+    public record IntegranteDto(
+            Long id,               // <--- AGREGA ESTO
+            String nombre,
+            String apellido,
+            String identificacion  // <--- AGREGA ESTO
+    ) {}
 }
