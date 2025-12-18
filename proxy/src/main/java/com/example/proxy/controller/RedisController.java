@@ -33,4 +33,6 @@ public class RedisController {
         // 4. Devolvemos el JSON tal cual vino de la Cátedra
         return ResponseEntity.ok(asientosJson);
     }
+
+
 }

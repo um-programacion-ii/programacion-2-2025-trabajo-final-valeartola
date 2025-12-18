@@ -20,10 +20,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers("/api/internal/**").permitAll()
+                        .requestMatchers("api/sessions/**").permitAll()
                         .requestMatchers("/api/invitado").permitAll()
                         .requestMatchers("/api/eventos/**").permitAll()
                         .requestMatchers("/api/carrito/**").permitAll()
                         .requestMatchers("/api/ventas/**").permitAll()
+                        .requestMatchers("/api/asientos/**").permitAll()
+
 
                         .anyRequest().authenticated()
 
