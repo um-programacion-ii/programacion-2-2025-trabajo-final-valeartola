@@ -12,8 +12,10 @@ public record EventoDetalleDTO(
         String fecha,
         String direccion,
         @JsonProperty("precioEntrada") Double precio,
-        String imagenUrl,
-        DatosTipoEvento tipo,
+        @JsonProperty("imagen") String imagenUrl,      // <-- Agregá esto
+        @JsonProperty("eventoTipo") DatosTipoEvento tipo, // <-- Agregá esto
+        @JsonProperty("filaAsientos") Integer filas,
+        @JsonProperty("columnAsientos") Integer columnas,
         List<IntegranteDetalleDTO> integrantes
 ) {
     public record DatosTipoEvento(String nombre, String descripcion) {}

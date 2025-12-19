@@ -16,7 +16,6 @@ public class Integrante {
 
     private String nombre;
     private String apellido;
-
-    @Column(unique = true)
+    @Column(name = "identificacion", unique = false)
     private String identificacion; // Para el campo "Dra.", "Profesor", etc.
 }

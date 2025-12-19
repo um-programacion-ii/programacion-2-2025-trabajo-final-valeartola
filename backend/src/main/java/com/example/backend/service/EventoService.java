@@ -64,6 +64,40 @@ public class EventoService {
         }
     }
 
+    @Transactional
+    public void actualizarDesdeNotificacion(EventoExternoDTO dto) {
+        // Buscamos el evento o creamos uno nuevo si no existe
+        Evento evento = eventoRepository.findById(dto.id())
+                .orElseGet(() -> {
+                    Evento nuevo = new Evento();
+                    nuevo.setId(dto.id());
+                    return nuevo;
+                });
+
+        // Reutilizamos tu lógica de mapeo que ya está en el archivo
+        actualizarDatos(evento, dto);
+
+        eventoRepository.save(evento);
+        log.info("Evento {} actualizado exitosamente desde Kafka.", dto.id());
+    }
+
+    @Transactional
+    public void actualizarUnSoloEvento(EventoExternoDTO dto) {
+        // Buscamos si ya existe el evento
+        Evento evento = eventoRepository.findById(dto.id())
+                .orElseGet(() -> {
+                    Evento nuevo = new Evento();
+                    nuevo.setId(dto.id());
+                    return nuevo;
+                });
+
+        // Usamos tu lógica de mapeo que ya funciona
+        actualizarDatos(evento, dto);
+
+        eventoRepository.save(evento);
+        log.info("Evento ID {} actualizado INSTANTÁNEAMENTE desde la notificación.", dto.id());
+    }
+
     private void procesarListaInteligente(List<EventoExternoDTO> externos) {
         // 1. Cargamos lo que tenemos en la DB
         Map<Long, Evento> mapaLocales = eventoRepository.findAll().stream()
@@ -85,7 +119,7 @@ public class EventoService {
         evento.setTitulo(dto.titulo());
         evento.setResumen(dto.resumen());
         evento.setDescripcion(dto.descripcion());
-        evento.setImagenUrl(dto.imagen());
+        evento.setImagenUrl(dto.imagenUrl());
         evento.setPrecio(dto.precio());
         evento.setDireccion(dto.direccion());
         evento.setFilas(dto.filas());
@@ -107,30 +141,31 @@ public class EventoService {
             evento.setEventoTipo(tipo);
         }
 
-        // --- LÓGICA DE INTEGRANTES SEGURA ---
+        // --- LÓGICA DE INTEGRANTES MEJORADA ---
         if (dto.integrantes() != null) {
             Set<Integrante> integrantesParaAsignar = new HashSet<>();
 
+            // En EventoService.java, dentro del for de integrantes:
             for (EventoExternoDTO.IntegranteDto iDto : dto.integrantes()) {
-                // Buscamos por identificación (DNI/Legajo) que es lo más seguro
-                Integrante integrante = integranteRepository.findByIdentificacion(iDto.identificacion())
-                        .orElseGet(() -> {
-                            // Si no existe, creamos uno NUEVO sin setearle ID manualmente
-                            Integrante nuevo = new Integrante();
-                            nuevo.setIdentificacion(iDto.identificacion());
-                            return nuevo;
-                        });
+                Integrante integrante;
 
-                // Actualizamos los datos (por si cambiaron en la API)
+                if (iDto.identificacion() != null && !iDto.identificacion().isBlank()) {
+                    integrante = integranteRepository.findByIdentificacion(iDto.identificacion())
+                            .orElse(new Integrante());
+                } else {
+                    integrante = integranteRepository.findByNombreAndApellido(iDto.nombre(), iDto.apellido())
+                            .orElse(new Integrante());
+                }
+
                 integrante.setNombre(iDto.nombre());
                 integrante.setApellido(iDto.apellido());
+                // AGREGÁ ESTA LÍNEA AQUÍ:
+                integrante.setIdentificacion(iDto.identificacion());
 
-                // Guardamos el integrante individualmente para asegurarnos que tenga ID antes de ir a la tabla intermedia
                 integrante = integranteRepository.save(integrante);
                 integrantesParaAsignar.add(integrante);
             }
 
-            // Actualizamos la relación ManyToMany
             evento.getIntegrantes().clear();
             evento.getIntegrantes().addAll(integrantesParaAsignar);
         }

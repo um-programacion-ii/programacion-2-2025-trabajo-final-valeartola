@@ -37,8 +37,11 @@ public class EventoController {
                         e.getDireccion(),
                         e.getPrecio(),
                         e.getImagenUrl(),
+                        // EL ORDEN AQUÍ ES CLAVE:
                         e.getEventoTipo() != null ?
-                                new EventoDetalleDTO.DatosTipoEvento(e.getEventoTipo().getNombre(), e.getEventoTipo().getDescripcion()) : null,
+                                new EventoDetalleDTO.DatosTipoEvento(e.getEventoTipo().getNombre(), e.getEventoTipo().getDescripcion()) : null, // 1. Tipo
+                        e.getFilas(),    // 2. Filas
+                        e.getColumnas(), // 3. Columnas
                         e.getIntegrantes().stream()
                                 .map(i -> new EventoDetalleDTO.IntegranteDetalleDTO(i.getNombre(), i.getApellido(), i.getIdentificacion()))
                                 .toList()
