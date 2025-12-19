@@ -3,6 +3,7 @@ package org.example.project
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,31 +19,25 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 import frontend.composeapp.generated.resources.Res
 import frontend.composeapp.generated.resources.compose_multiplatform
+import org.example.project.ui.MainScreen
+import org.example.project.model.LoginResponse
+
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
+        var screenState by remember { mutableStateOf("login") }
+
+        if (screenState == "login") {
+            MainScreen(onNavigateToEvents = { response ->
+                println("Logueado con éxito: ${response.nombre}")
+                screenState = "eventos"
+            })
+        } else {
+            // Aquí irá tu pantalla de eventos más adelante
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("¡Bienvenido a la lista de eventos!")
             }
         }
     }
