@@ -9,6 +9,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.example.project.model.LoginResponse
+import org.example.project.model.Evento
 
 class AuthRepository {
     // Configuramos el cliente Ktor con JSON
@@ -36,6 +37,25 @@ class AuthRepository {
         } catch (e: Exception) {
             println("Error: ${e.message}")
             null
+        }
+    }
+
+    suspend fun getEvento(token: String): List<Evento> {
+        return try {
+            val response = httpClient.get("http://10.186.197.23:8080/api/eventos") {
+                headers {
+                    // ESTA LÍNEA ES LA MÁS IMPORTANTE:
+                    append("Authorization", "Bearer $token")
+                }
+            }
+
+            // Agregamos este print para ver qué dice el servidor en el Logcat
+            println("Status de la respuesta: ${response.status}")
+
+            response.body<List<Evento>>()
+        } catch (e: Exception) {
+            println("Error fatal: ${e.message}")
+            emptyList()
         }
     }
 }
