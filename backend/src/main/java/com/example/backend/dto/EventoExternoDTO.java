@@ -12,14 +12,13 @@ public record EventoExternoDTO(
         String descripcion,
         String resumen,
         String direccion,
-        String imagen,
         String estado,
-
+        @JsonProperty("imagen") String imagenUrl,
         @JsonProperty("precioEntrada") Double precio,
         @JsonProperty("fecha") ZonedDateTime fecha,
 
         @JsonProperty("filaAsientos") Integer filas,
-        @JsonProperty("columnaAsientos") Integer columnas,
+        @JsonProperty("columnAsientos") Integer columnas,
 
         @JsonProperty("eventoTipo") EventoTipoDto eventoTipo,
         @JsonProperty("integrantes") List<IntegranteDto> integrantes
