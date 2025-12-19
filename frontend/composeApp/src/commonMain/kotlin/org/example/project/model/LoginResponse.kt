@@ -10,6 +10,5 @@ data class LoginResponse(
 
     val sessionId: String,
 
-    // Como el Java no manda nombre, le damos uno por defecto
     val nombre: String = "Invitado"
 )
