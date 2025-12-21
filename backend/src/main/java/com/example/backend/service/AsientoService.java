@@ -4,6 +4,7 @@ import com.example.backend.client.CatedraClient;
 import com.example.backend.dto.asiento.AsientoOcupadoExternoDTO;
 import com.example.backend.dto.asiento.EstadoAsientoDTO;
 import com.example.backend.dto.asiento.RespuestaRedisDTO;
+import com.example.backend.dto.bloqueo.ReservaRequestDTO;
 import com.example.backend.model.Evento;
 import com.example.backend.repository.EventoRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class AsientoService {
 
     private final EventoRepository eventoRepository;
     private final RestTemplate restTemplate;
-    private final CatedraClient catedraClient; // <--- AGREGA ESTO
+    private final CatedraClient catedraClient;
 
     @Value("${PROXY_SERVICE_URL}")
     private String proxyBaseUrl;
@@ -93,11 +94,24 @@ public class AsientoService {
         return mapaFinal;
     }
 
-    public Object bloquearAsiento(Long eventoId, List<Map<String, Object>> asientos) {
-        // El Payload 6 ahora recibe la lista completa que viene del Controller
+    public Object bloquearAsiento(ReservaRequestDTO request) {
+        // 1. VALIDACIÓN: Recorremos los asientos para ver si tienen nombre y apellido
+        for (var asiento : request.asientos()) {
+            if (asiento.nombre() == null || asiento.nombre().isBlank() ||
+                    asiento.apellido() == null || asiento.apellido().isBlank()) {
+
+                log.error("Intento de compra sin datos completos: {}", asiento);
+                return Map.of(
+                        "resultado", false,
+                        "descripcion", "Error: El nombre y apellido son obligatorios para todos los asientos."
+                );
+            }
+        }
+
+        // 2. Si pasó la validación, seguimos con el proceso normal
         Map<String, Object> payload6 = Map.of(
-                "eventoId", eventoId,
-                "asientos", asientos
+                "eventoId", request.eventoId(),
+                "asientos", request.asientos()
         );
 
         try {
@@ -108,19 +122,22 @@ public class AsientoService {
 
             String urlCatedra = baseUrl + "/api/endpoints/v1/bloquear-asientos";
 
-            // 1. Llamamos a la Cátedra y capturamos su respuesta JSON
+            // Llamamos a la Cátedra
             ResponseEntity<Object> respuesta = restTemplate.postForEntity(urlCatedra, entity, Object.class);
 
-            // 2. Si salió bien, avisamos al Proxy (opcional, pero recomendado)
+            // Notificamos al Proxy (Redis)
             try {
                 restTemplate.postForEntity(proxyBaseUrl + "/proxy/redis/bloquear", payload6, String.class);
-            } catch (Exception e) { log.warn("Proxy no disponible"); }
+                log.info("Proxy Redis actualizado correctamente");
+            } catch (Exception e) {
+                log.warn("El Proxy no respondió, pero la reserva en Cátedra fue exitosa");
+            }
 
-            return respuesta.getBody(); // <--- Devolvemos el JSON real de la Cátedra
+            return respuesta.getBody();
 
         } catch (Exception e) {
-            log.error("Error: {}", e.getMessage());
-            return Map.of("resultado", false, "descripcion", "Error de comunicación con la Cátedra");
+            log.error("Error en comunicación: {}", e.getMessage());
+            return Map.of("resultado", false, "descripcion", "Error al conectar con el servidor externo");
         }
     }
 }

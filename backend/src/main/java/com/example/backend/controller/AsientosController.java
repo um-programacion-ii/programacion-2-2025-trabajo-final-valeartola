@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.bloqueo.BloqueoRequestDTO;
+import com.example.backend.dto.bloqueo.ReservaRequestDTO;
 import com.example.backend.dto.venta.CompraRequestDTO;
 import com.example.backend.service.AsientoService;
 import com.example.backend.service.RedisService;
@@ -23,21 +24,9 @@ public class AsientosController {
     private final AsientoService asientoService;
 
     @PostMapping("/reservar")
-    public ResponseEntity<?> reservarAsientos(@RequestBody List<BloqueoRequestDTO> listaAsientos) {
-        if (listaAsientos.isEmpty()) return ResponseEntity.badRequest().body("Lista vacía");
-
-        // Tomamos el eventoId del primer elemento (asumimos que todos son del mismo evento)
-        Long eventoId = listaAsientos.get(0).eventoId();
-
-        // Convertimos la lista de DTOs a la estructura que espera la Cátedra
-        List<Map<String, Object>> asientosMap = listaAsientos.stream()
-                .map(a -> Map.<String, Object>of("fila", a.fila(), "columna", a.columna()))
-                .toList();
-
-        // Llamamos al service y devolvemos LO QUE SEA que responda la cátedra
-        Object resultado = asientoService.bloquearAsiento(eventoId, asientosMap);
-
-        return ResponseEntity.ok(resultado); // <--- Aquí verás el JSON en Postman
+    public ResponseEntity<?> reservar(@RequestBody ReservaRequestDTO request) {
+        Object resultado = asientoService.bloquearAsiento(request);
+        return ResponseEntity.ok(resultado);
     }
 
     // 2. COMPRAR: Recibe el ID del evento y la lista de asientos con nombres y apellidos
