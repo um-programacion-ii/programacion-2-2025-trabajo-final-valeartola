@@ -1,11 +1,14 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.EventoDetalleDTO;
-import com.example.backend.dto.EventoResumenDTO;
+import com.example.backend.dto.asiento.EstadoAsientoDTO;
+import com.example.backend.dto.evento.EventoDetalleDTO;
+import com.example.backend.dto.evento.EventoResumenDTO;
 import com.example.backend.model.EstadoEvento;
 import com.example.backend.model.Evento;
 import com.example.backend.repository.EventoRepository;
+import com.example.backend.service.AsientoService;
 import com.example.backend.service.SincronizacionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,16 +16,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/eventos")
+@RequiredArgsConstructor
 public class EventoController {
 
     private final EventoRepository eventoRepository;
     private final SincronizacionService sincronizacionService;
+    private final AsientoService asientoService;
 
-    public EventoController(EventoRepository eventoRepository, SincronizacionService sincronizacionService) {
-
-        this.eventoRepository = eventoRepository;
-        this.sincronizacionService = sincronizacionService;
-    }
 
     @GetMapping
     public List<EventoDetalleDTO> obtenerEventosActivos() {
@@ -96,7 +96,8 @@ public class EventoController {
     }
 
     @GetMapping("/{id}/asientos")
-    public String obtenerMapaAsientos(@PathVariable Long id) {
-        return "Mapa de asientos (implementación pendiente - ver EventoService)";
+    public ResponseEntity<List<EstadoAsientoDTO>> obtenerMapa(@PathVariable("id") Long id) { // Agregamos ("id")
+        List<EstadoAsientoDTO> mapa = asientoService.obtenerMapaCompleto(id);
+        return ResponseEntity.ok(mapa);
     }
 }

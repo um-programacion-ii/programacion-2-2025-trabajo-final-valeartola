@@ -1,7 +1,7 @@
 package com.example.backend.client;
 
-import com.example.backend.dto.AsientoOcupadoExternoDTO;
-import com.example.backend.dto.EventoResumenDTO;
+import com.example.backend.dto.asiento.AsientoOcupadoExternoDTO;
+import com.example.backend.dto.evento.EventoResumenDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,7 +70,7 @@ public class CatedraClient {
                     .header("Authorization", "Bearer " + token)
                     .bodyValue(payload6)
                     .retrieve()
-                    .bodyToMono(Map.class) // Esto hace que el retorno sea un Map
+                    .bodyToMono(Map.class)
                     .block();
         } catch (Exception e) {
             log.error("Error al bloquear asientos en Cátedra: {}", e.getMessage());

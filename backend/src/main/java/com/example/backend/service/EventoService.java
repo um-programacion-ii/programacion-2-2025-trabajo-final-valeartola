@@ -1,6 +1,6 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.EventoExternoDTO;
+import com.example.backend.dto.evento.EventoExternoDTO;
 import com.example.backend.model.Evento;
 import com.example.backend.model.Integrante;
 import com.example.backend.model.TipoEvento;

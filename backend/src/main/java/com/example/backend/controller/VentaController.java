@@ -1,6 +1,5 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.DatosCompradorDTO;
 import com.example.backend.model.Venta;
 import com.example.backend.repository.VentaRepository;
 import com.example.backend.service.VentaService;
@@ -19,21 +18,6 @@ public class VentaController {
     private final VentaRepository ventaRepository;
     private final VentaService ventaService;
 
-    @PostMapping("/confirmar")
-    public ResponseEntity<?> confirmarCompra(
-            @RequestHeader("X-Session-ID") String sessionId,
-            @RequestBody DatosCompradorDTO comprador // <--- Usamos tu nuevo DTO
-    ) {
-        try {
-            // Pasamos el DTO completo al service
-            Object ticket = ventaService.procesarCompra(sessionId, comprador);
-            return ResponseEntity.ok(ticket);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(409).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error al procesar la compra");
-        }
-    }
 
     @GetMapping("/detalle/{id}")
     public ResponseEntity<Map<String, Object>> verDetalleVenta(@PathVariable Long id) {
