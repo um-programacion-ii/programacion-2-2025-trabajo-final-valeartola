@@ -1,6 +1,6 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.EventoExternoDTO;
+import com.example.backend.dto.evento.EventoExternoDTO;
 import com.fasterxml.jackson.databind.ObjectMapper; // Necesitás este import
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

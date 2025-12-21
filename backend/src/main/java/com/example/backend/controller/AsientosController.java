@@ -1,11 +1,15 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.TicketItemDTO;
+import com.example.backend.dto.bloqueo.BloqueoRequestDTO;
+import com.example.backend.dto.bloqueo.ReservaRequestDTO;
+import com.example.backend.dto.venta.CompraRequestDTO;
+import com.example.backend.service.AsientoService;
+import com.example.backend.service.RedisService;
 import com.example.backend.service.VentaService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -15,45 +19,33 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AsientosController {
 
+    private final RedisService redisService;
     private final VentaService ventaService;
-    private final RestTemplate restTemplate;
+    private final AsientoService asientoService;
 
-    @GetMapping("/{eventoId}")
-    public ResponseEntity<String> obtenerMapaAsientos(@PathVariable Long eventoId) {
-        try {
-            // Llamamos a tu Proxy para obtener el estado actual de los asientos
-            String urlProxy = "http://localhost:8081/proxy/redis/evento/" + eventoId;
-            String mapa = restTemplate.getForObject(urlProxy, String.class);
-            return ResponseEntity.ok(mapa);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error al conectar con el Proxy de Redis");
-        }
-    }
-    @PostMapping("/{eventoId}/bloquear")
-    public ResponseEntity<?> bloquearAsientos(
-            @PathVariable Long eventoId,
-            @RequestBody List<TicketItemDTO> asientos
-    ) {
-        try {
-            // Usamos el metodo que creamos en VentaService para el Payload 6
-            Map<String, Object> resultado = ventaService.reservarAsientosEnCatedra(eventoId, asientos);
-
-            if (Boolean.TRUE.equals(resultado.get("resultado"))) {
-                return ResponseEntity.ok(resultado);
-            } else {
-                return ResponseEntity.status(409).body(resultado); // Conflicto: ya están ocupados
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error al procesar el bloqueo externo");
-        }
+    @PostMapping("/reservar")
+    public ResponseEntity<?> reservar(@RequestBody ReservaRequestDTO request) {
+        Object resultado = asientoService.bloquearAsiento(request);
+        return ResponseEntity.ok(resultado);
     }
 
-    @PostMapping("/{eventoId}/liberar")
-    public String liberarAsientos(
-            @PathVariable Long eventoId,
-            @RequestBody List<TicketItemDTO> asientos
+    // 2. COMPRAR: Recibe el ID del evento y la lista de asientos con nombres y apellidos
+    @PostMapping("/comprar")
+    public ResponseEntity<?> confirmarCompra(
+            @RequestHeader("X-Session-ID") String sessionId,
+            @RequestBody CompraRequestDTO compraRequest
     ) {
-        // Aquí podrías llamar a tu redisService.liberarAsientos(...)
-        return "Asientos liberados localmente para el evento " + eventoId;
+        try {
+            // El service arma el Payload 7 y lo envía a la cátedra
+            Object respuesta = ventaService.procesarCompra(compraRequest);
+
+            // Si la compra fue exitosa, liberamos los bloqueos de Redis
+            // (Opcional: podés hacerlo dentro del service)
+            return ResponseEntity.ok(respuesta);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al procesar la compra");
+        }
     }
 }
